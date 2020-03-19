@@ -1,0 +1,271 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage
+[
+        a4paper,% other options: a3paper, a5paper, etc
+        left   = 1 in,
+        right  = 1 in,
+        top    = 0.4 in,
+        bottom = 0.4 in,
+        % use vmargin=2cm to make vertical margins equal to 2cm.
+        % us  hmargin=3cm to make horizontal margins equal to 3cm.
+        % use margin=3cm to make all margins  equal to 3cm.
+]
+{geometry}
+\title{High Performance Computing : Home Work 2}
+\author{SACHIN SATISH BHARADWAJ\\ N16360220 (ssb638)\\ https://github.com/SachinSBharadwaj/hw2.git}
+\date{}
+\begin{document}
+
+\maketitle
+\section*{Question 2\\ Optimizing matrix-matrix multiplication}
+(1) \underline{MACHINE SPECS}: \\
+
+\noindent First, let us look at the processor/machine details on which \textbf{all the} codes were run on. A brief summary of the processor information would look something like the following:
+\begin{enumerate}
+    \item \textbf{CPU} :
+    \begin{enumerate}
+        \item Machine: Lenovo ThinkStation P330 (2nd Gen)
+        \item Processor Company: Genuine Intel
+        \item CPU Family: 6
+        \item Model Name: Intel(R) Core(TM) i9-9900 CPU @ 3.10GHz
+        \item Stepping: 1
+        \item Siblings / CPU cores : 8 / 16 processors
+        \item Number of Threads: 16
+        \item CPU MHz = 1600.006 MHz
+        \item CPU Max Frequency: 3.1 GHz
+        \item Max Turbo Speed : 5 GHz
+        \item Max FLOPS : $\approx$ 300 GFlops/s
+    \end{enumerate}
+    \item \textbf{MEMORY} :
+    \begin{enumerate}
+         \item Mem Total (Slow Access) : 1 TB
+        \item RAM: 32 GB
+        \item L1 Cache : 512 KB
+        \item Cache Size: 16384 KB
+        \item Rated Memory Speed : 2.66 MHz
+        \item g++/gcc compiler version : gcc version 7.5.0 (Ubuntu 7.5.0-3ubuntu1~18.04)
+ 
+    \end{enumerate}
+\end{enumerate}
+
+\noindent (2) \underline{LOOP ORDER TIMINGS}: \\
+
+\noindent The loop order matters very crucially and can vary the timings and performance. All the loop orders were tried (the first 3 outer I,J,P loops and the inner three i,j,p loops of the blocked version of matrix multiplication). Now for every three i,j,p loops of a matix multiplication it was found that each one has a different performance per iteration:
+\begin{enumerate}
+    \item pij and ipj : 0.5 cache misses (2 Load + 1 Store)
+    \item ijp and jip : 1.25 cache misses (2 Load + 0 Store) 
+    \item jpi and pji : 2.0 cache misses (2 Load + 1 Store)
+\end{enumerate}
+\textbf{ Conclusion: So, it is found that the ipj/IPJ version is better.}
+\\\newpage \noindent \textbf{Inner 3 Loops:} The timings are as follows -
+ \begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.5\textwidth]{ijp.png}
+    \caption{ \textbf{i,p,j order}}
+    
+    \includegraphics[width=1\textwidth,height=0.5\textwidth]{jpi.png}
+    \caption{ \textbf{i,j,p order}}
+
+    \includegraphics[width=1\textwidth,height=0.5\textwidth]{ipj.png}
+    \caption{ \textbf{j,p,i order}}
+    
+  \end{figure} 
+  
+\newpage
+
+\noindent \textbf{Outer 3 Loops:} The timings are as follows -
+ \begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.5\textwidth]{JPI1.png}
+    \caption{ \textbf{I,P,J order}}
+
+    \includegraphics[width=1\textwidth,height=0.5\textwidth]{IJP1.png}
+    \caption{ \textbf{I,J,P order}}
+    
+
+    \includegraphics[width=1\textwidth,height=0.5\textwidth]{IPJ1.png}
+    \caption{ \textbf{J,P,I order}}
+  \end{figure} 
+
+\newpage
+
+\noindent (3) \underline{BLOCK SIZE VARIATION TIMINGS}:\\
+
+\noindent After implementing the Blocked version of matrix multiplication, the block sizes were varied to see how the performance change. The performance is shown as follows:
+ \begin{figure}[htpb!]
+     \centering
+    \includegraphics[scale=0.45]{BS.eps}
+    \caption{ \textbf{Performance with different block sizes with varying matrix dimensions }}
+    \end{figure}
+
+\noindent It is seen that as we vary block sizes the optimal block size lies somewhere between 8 and 12. This also seems correct since as deduced in - Irony/Tiskin/Toeldo (2004) + James Demmel + HBL(Hölder-Brascamp-Lieb) Bound - we find that the \{optimal block memory size\} $\approx$ (L1 cache)\textsuperscript{0.5}. Now for the machine being used, L1 cache is 512 KB. Which means the block should be $\approx 10 \times 10 $ matrix of elements with a size of \textbf{double}. This fits very well with our observation in Figure 7 that the optimal size peaks performance somewhere between 8 and 12!! \\
+
+\noindent (4) \underline{TIMINGS FOR BLOCKED AND BLOCKED + OpenMP VERSIONS}:\\
+\noindent Here the timings for both Bocked only and Blocked + OpenMP versions are shown for both compilation flags -O2 and -O3. In the OpenMP version both static scheduling and collapsed version were tried, but only one of them is presented here.
+
+\noindent \textbf{BEST PERFORMANCE $\approx$ 13.33\% of PEAK THEORETICAL LIMIT } (40 GFPs/300 GFPs) 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_8.png}
+    \caption{ \textbf{Block Size 8 ; Only Blocked; -O3 Flag}}
+
+        \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_8.png}
+    \caption{ \textbf{Block Size 8 ; Blocked+ OMP; -O3 Flag}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_12.png}
+    \caption{ \textbf{Block Size 12 ; Only Blocked; -O3 Flag}}
+
+        \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_12.png}
+    \caption{ \textbf{Block Size 12 ; Blocked+ OMP; -O3 Flag}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_16.png}
+    \caption{ \textbf{Block Size 16 ; Only Blocked; -O3 Flag}}
+
+        \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_16.png}
+    \caption{ \textbf{Block Size 16 ; Blocked+ OMP; -O3 Flag}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_20.png}
+    \caption{ \textbf{Block Size 20 ; Only Blocked; -O3 Flag}}
+
+        \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_20.png}
+    \caption{ \textbf{Block Size 20 ; Blocked+ OMP; -O3 Flag}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_O2_8.png}
+    \caption{ \textbf{Block Size 8 ; Blocked+ OMP ; -O2 Flag}}
+
+        \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_O2_12.png}
+    \caption{ \textbf{Block Size 12 ; Blocked+ OMP; -O2 Flag}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_O2_16.png}
+    \caption{ \textbf{Block Size 16 ; Blocked+ OMP; -O2 Flag}}
+
+        \includegraphics[width=1\textwidth,height=0.8\textwidth]{Mult_Blk_OMP_O2_20.png}
+    \caption{ \textbf{Block Size 20 ; Blocked+ OMP ; -O2 Flag}}
+  \end{figure} 
+
+\newpage
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=1\textwidth,height=0.9\textwidth]{Mult_Simple_12.png}
+    \caption{ \textbf{Simple Multiplication; -O3 Flag}}
+\end{figure}
+
+\noindent \textit{Speedup:} From the above simple multiplication routine, the observed speed up with respect to its corresponding Blocked + OpenMp version is roughly \textbf {23.365 times faster!}
+
+\section*{Question 4\\ OpenMP version of 2D Jacobi/Gauss-Seidel smoothing}
+\vspace{0.5cm}
+ (1) \underline{MACHINE SPECS}: Is the same as mentioned above in Question 2.\\
+ 
+ \noindent (2) \underline{TIMINGS FOR DIFFERENT DISCRETISATIONS AND # THREADS}:\\
+ 
+ \noindent Both the timings are given below, for Jacobi and Gauss-Seidel, in the following pages,  The maximum iterations of 15000 for all the runs. Both the serial code and the OpenMP code timings for different matrix sizes and different number of threads are reported below.\\
+ 
+\noindent(A) \textbf{2D JACOBI SMOOTHING}: Figures 21, 23-26\\
+
+ \noindent (B) \textbf{2D GAUSS-SEIDEL SMOOTHING}: Figures 22, 27-30\\
+ 
+  \noindent Both these timings are given below, in the follwoing pages. The maximum iterations was set to 15000 for all runs. Both the serial code and the OpenMP code timings for different matrix sizes and different number of threads are reported below.\\
+  
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{SERIAL_JACOBI.png}
+    \caption{ \textbf{SERIAL JACOBI}}
+
+        \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{SERIAL_GS.png}
+    \caption{ \textbf{SERIAL GAUSS SEIDEL}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_2_JACOBI.png}
+    \caption{ \textbf{2 THREAD JACOBI}}
+
+        \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_5_JACOBI.png}
+    \caption{ \textbf{5 THREAD JACOBI}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_8_JACOBI.png}
+    \caption{ \textbf{8 THREAD JACOBI}}
+
+        \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_10_JACOBI.png}
+    \caption{ \textbf{10 THREAD JACOBI}}
+  \end{figure} 
+
+\newpage
+    
+  
+  \begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_2_GS.png}
+    \caption{ \textbf{2 THREAD GAUSS SEIDEL}}
+
+        \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_5_GS.png}
+    \caption{ \textbf{5 THREAD GAUSS SEIDEL}}
+  \end{figure} 
+
+\newpage
+
+\begin{figure}[htpb!]
+     \centering
+
+    \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_8_GS.png}
+    \caption{ \textbf{8 THREAD GAUSS SEIDEL}}
+
+        \includegraphics[width=0.5\textwidth,height=0.8\textwidth]{T_10_GS.png}
+    \caption{ \textbf{10 THREAD GAUSS SEIDEL}}
+  \end{figure} 
+
+
+\end{document}
